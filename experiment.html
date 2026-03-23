@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Experiments{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="page-header mb-4 d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <h3 class="fw-700"><i class="bi bi-flask text-primary me-2"></i>MLflow Experiments</h3>
+      <p class="text-muted mb-0">All tracked experiments and run history from MLflow</p>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-primary fs-6 px-3 py-2">
+        <i class="bi bi-layers me-1"></i>{{ experiments|length }} Experiment(s)
+      </span>
+    </div>
+  </div>
+
+  {% if not experiments %}
+  <div class="empty-state text-center py-5">
+    <div class="empty-icon mb-3"><i class="bi bi-flask"></i></div>
+    <h5 class="fw-600 mb-2">No Experiments Found</h5>
+    <p class="text-muted mb-4">Run the pipeline to create MLflow experiments and track model runs.</p>
+    <a href="/" class="btn btn-primary px-4">
+      <i class="bi bi-play-fill me-2"></i>Run Pipeline
+    </a>
+  </div>
+  {% endif %}
+
+  {% for exp in experiments %}
+  <div class="card-custom mb-4">
+    <!-- Experiment Header -->
+    <div class="exp-header mb-3">
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="exp-icon"><i class="bi bi-flask-fill"></i></div>
+        <div>
+          <div class="exp-name">{{ exp.name }}</div>
+          <div class="exp-id">Experiment ID: {{ exp.id }}</div>
+        </div>
+        <div class="ms-auto">
+          <span class="badge bg-primary">{{ exp.runs|length }} Runs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Runs Table -->
+    {% if exp.runs %}
+    <div class="table-responsive">
+      <table class="table table-hover exp-table mb-0">
+        <thead>
+          <tr>
+            <th>Run Name</th>
+            <th>Run ID</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1 Score</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in exp.runs %}
+          <tr>
+            <td class="fw-600">{{ run.run_name }}</td>
+            <td><code class="run-id-small">{{ run.run_id }}...</code></td>
+            <td>
+              <div class="progress mini-bar mb-1">
+                <div class="progress-bar bg-info" style="width: {{ (run.accuracy * 100)|int }}%"></div>
+              </div>
+              <small class="fw-600">{{ run.accuracy }}</small>
+            </td>
+            <td>{{ run.precision }}</td>
+            <td>{{ run.recall }}</td>
+            <td>
+              <span class="fw-700 text-primary">{{ run.f1_score }}</span>
+            </td>
+            <td>
+              {% if run.status == "FINISHED" %}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Finished</span>
+              {% elif run.status == "FAILED" %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Failed</span>
+              {% else %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>{{ run.status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0"><i class="bi bi-info-circle me-1"></i>No runs in this experiment yet.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <!-- MLflow UI Tip -->
+  <div class="info-box mt-4">
+    <i class="bi bi-lightbulb-fill me-2 text-warning"></i>
+    <strong>Tip:</strong> Launch the full MLflow UI by running
+    <code>mlflow ui</code> in your terminal from the project folder.
+    Then open <strong>http://127.0.0.1:5001</strong> to explore runs, compare metrics, and view artifacts.
+  </div>
+</div>
+
+<style>
+.empty-state{padding:4rem}
+.empty-icon{font-size:4rem;color:rgba(67,97,238,.3)}
+.exp-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--primary),#7209b7);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;flex-shrink:0}
+.exp-name{font-size:1.1rem;font-weight:700;color:var(--text)}
+.exp-id{font-size:.78rem;color:var(--text-muted)}
+.exp-header{border-bottom:1px solid var(--border);padding-bottom:1rem}
+.exp-table th{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border:none;padding:.75rem 1rem}
+.exp-table td{vertical-align:middle;padding:.75rem 1rem;border-color:var(--border);font-size:.88rem}
+.run-id-small{font-size:.75rem;background:rgba(67,97,238,.1);color:var(--primary);padding:.15rem .45rem;border-radius:4px}
+.mini-bar{height:4px;border-radius:2px;width:80px;background:var(--border)}
+</style>
+{% endblock %}

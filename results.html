@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="page-header mb-4">
+    <h3 class="fw-700"><i class="bi bi-table text-primary me-2"></i>Pipeline Results</h3>
+    <p class="text-muted mb-0">Summary of all training runs and model performance</p>
+  </div>
+
+  <!-- Best Model Banner -->
+  {% if best %}
+  <div class="best-model-banner mb-4">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div class="trophy-icon"><i class="bi bi-trophy-fill"></i></div>
+      <div>
+        <div class="best-model-label">🏆 Best Model</div>
+        <div class="best-model-name">{{ best.model_name }}</div>
+      </div>
+      <div class="ms-auto d-flex gap-4 flex-wrap">
+        <div class="metric-pill">
+          <span class="metric-pill-label">F1 Score</span>
+          <span class="metric-pill-value">{{ "%.4f"|format(best.f1_score) }}</span>
+        </div>
+        <div class="metric-pill">
+          <span class="metric-pill-label">Accuracy</span>
+          <span class="metric-pill-value">{{ "%.4f"|format(best.accuracy) }}</span>
+        </div>
+        <div class="metric-pill">
+          <span class="metric-pill-label">Precision</span>
+          <span class="metric-pill-value">{{ "%.4f"|format(best.precision) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Data + Preprocessing Summary -->
+  <div class="row g-3 mb-4">
+    {% if data_report %}
+    <div class="col-md-6">
+      <div class="card-custom h-100">
+        <h6 class="fw-700 mb-3"><i class="bi bi-database-fill me-2 text-primary"></i>Data Ingestion Report</h6>
+        <table class="table table-sm info-table mb-0">
+          <tr><td class="text-muted">Total Rows</td><td class="fw-600">{{ data_report.total_rows }}</td></tr>
+          <tr><td class="text-muted">Total Columns</td><td class="fw-600">{{ data_report.total_columns }}</td></tr>
+          <tr><td class="text-muted">Missing Values</td>
+            <td><span class="badge {% if data_report.missing_values == 0 %}bg-success{% else %}bg-warning{% endif %}">{{ data_report.missing_values }}</span></td>
+          </tr>
+          <tr><td class="text-muted">Duplicate Rows</td>
+            <td><span class="badge {% if data_report.duplicate_rows == 0 %}bg-success{% else %}bg-warning{% endif %}">{{ data_report.duplicate_rows }}</span></td>
+          </tr>
+          {% if data_report.class_distribution %}
+          <tr>
+            <td class="text-muted">Class Distribution</td>
+            <td class="fw-600">
+              {% for k, v in data_report.class_distribution.items() %}
+                <span class="badge bg-primary me-1">Class {{ k }}: {{ v }}</span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if preprocess_stats %}
+    <div class="col-md-6">
+      <div class="card-custom h-100">
+        <h6 class="fw-700 mb-3"><i class="bi bi-gear-fill me-2 text-primary"></i>Preprocessing Stats</h6>
+        <table class="table table-sm info-table mb-0">
+          <tr><td class="text-muted">Training Samples</td><td class="fw-600">{{ preprocess_stats.train_size }}</td></tr>
+          <tr><td class="text-muted">Test Samples</td><td class="fw-600">{{ preprocess_stats.test_size }}</td></tr>
+          <tr><td class="text-muted">Features Used</td><td class="fw-600">{{ preprocess_stats.num_features }}</td></tr>
+          <tr><td class="text-muted">Test Ratio</td><td class="fw-600">{{ (preprocess_stats.test_ratio * 100)|int }}%</td></tr>
+          <tr><td class="text-muted">Scaling</td><td class="fw-600">{{ preprocess_stats.scaling }}</td></tr>
+          <tr><td class="text-muted">Imputation</td><td class="fw-600">{{ preprocess_stats.imputation }}</td></tr>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Models Comparison Table -->
+  <div class="card-custom mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-700 mb-0"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Model Comparison</h6>
+      <a href="/metrics" class="btn btn-sm btn-primary">
+        <i class="bi bi-bar-chart-fill me-1"></i>View Charts
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover results-table mb-0">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Model</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1 Score</th>
+            <th>Run ID</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set sorted_results = results | sort(attribute='f1_score', reverse=True) %}
+          {% for result in sorted_results %}
+          <tr class="{% if result.model_name == best.model_name %}best-row{% endif %}">
+            <td>
+              {% if loop.index == 1 %}
+                <span class="rank-badge gold"><i class="bi bi-trophy-fill"></i></span>
+              {% elif loop.index == 2 %}
+                <span class="rank-badge silver">2</span>
+              {% elif loop.index == 3 %}
+                <span class="rank-badge bronze">3</span>
+              {% else %}
+                <span class="rank-badge plain">{{ loop.index }}</span>
+              {% endif %}
+            </td>
+            <td class="fw-600">{{ result.model_name }}</td>
+            <td>
+              <div class="metric-bar-wrapper">
+                <div class="metric-bar" style="width: {{ (result.accuracy * 100)|int }}%"></div>
+                <span class="metric-val">{{ "%.4f"|format(result.accuracy) }}</span>
+              </div>
+            </td>
+            <td>{{ "%.4f"|format(result.precision) }}</td>
+            <td>{{ "%.4f"|format(result.recall) }}</td>
+            <td>
+              <span class="fw-700 {% if result.model_name == best.model_name %}text-success{% else %}text-primary{% endif %}">
+                {{ "%.4f"|format(result.f1_score) }}
+              </span>
+            </td>
+            <td><code class="run-id">{{ result.run_id[:8] }}...</code></td>
+            <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Done</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="d-flex gap-3 flex-wrap">
+    <a href="/metrics" class="btn btn-primary px-4 fw-600">
+      <i class="bi bi-bar-chart-fill me-2"></i>View Metrics & Charts
+    </a>
+    <a href="/predict" class="btn btn-success px-4 fw-600">
+      <i class="bi bi-lightning-fill me-2"></i>Make Predictions
+    </a>
+    <a href="/" class="btn btn-outline-secondary px-4">
+      <i class="bi bi-arrow-counterclockwise me-2"></i>Run Again
+    </a>
+  </div>
+</div>
+
+<style>
+.best-model-banner{background:linear-gradient(135deg,#1a1f3a,#1e2d4a);border:1px solid rgba(67,97,238,.4);border-radius:16px;padding:1.5rem 2rem}
+.trophy-icon{width:56px;height:56px;background:linear-gradient(135deg,#f6c90e,#f38b00);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff}
+.best-model-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6)}
+.best-model-name{font-size:1.5rem;font-weight:700;color:#fff}
+.metric-pill{text-align:center}
+.metric-pill-label{display:block;font-size:.72rem;color:rgba(255,255,255,.55);text-transform:uppercase}
+.metric-pill-value{display:block;font-size:1.2rem;font-weight:700;color:#4cc9f0}
+.results-table th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border:none;background:transparent;padding:.875rem 1rem}
+.results-table td{vertical-align:middle;padding:.875rem 1rem;border-color:var(--border)}
+.best-row td{background:rgba(25,135,84,.07)!important}
+.rank-badge{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700}
+.rank-badge.gold{background:linear-gradient(135deg,#f6c90e,#f38b00);color:#fff}
+.rank-badge.silver{background:linear-gradient(135deg,#adb5bd,#6c757d);color:#fff}
+.rank-badge.bronze{background:linear-gradient(135deg,#cd7f32,#8b4513);color:#fff}
+.rank-badge.plain{background:var(--border);color:var(--text-muted)}
+.metric-bar-wrapper{display:flex;align-items:center;gap:.5rem}
+.metric-bar{height:6px;background:var(--primary);border-radius:3px;min-width:4px}
+.metric-val{font-size:.88rem;font-weight:600;white-space:nowrap}
+.run-id{font-size:.78rem;background:rgba(67,97,238,.12);color:var(--primary);padding:.2rem .5rem;border-radius:4px}
+.info-table td{padding:.5rem .25rem;border:none;font-size:.88rem}
+</style>
+{% endblock %}

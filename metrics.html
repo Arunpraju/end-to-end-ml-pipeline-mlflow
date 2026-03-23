@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Metrics{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="page-header mb-4">
+    <h3 class="fw-700"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Model Metrics & Charts</h3>
+    <p class="text-muted mb-0">Interactive visualizations of model performance</p>
+  </div>
+
+  <!-- Best Model Summary Row -->
+  {% if best %}
+  <div class="row g-3 mb-4">
+    {% for metric, label, icon in [("accuracy","Accuracy","check-circle-fill"),("precision","Precision","bullseye"),("recall","Recall","arrow-repeat"),("f1_score","F1 Score","star-fill")] %}
+    <div class="col-6 col-md-3">
+      <div class="metric-summary-card">
+        <div class="metric-summary-icon {{ ['blue','purple','pink','green'][loop.index0] }}">
+          <i class="bi bi-{{ icon }}"></i>
+        </div>
+        <div class="metric-summary-value">{{ "%.4f"|format(best[metric]) }}</div>
+        <div class="metric-summary-label">Best {{ label }}</div>
+        <div class="metric-summary-model">{{ best.model_name }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Charts Row 1 -->
+  <div class="row g-3 mb-3">
+    <div class="col-lg-8">
+      <div class="card-custom">
+        <h6 class="fw-700 mb-3"><i class="bi bi-bar-chart-grouped me-2 text-primary"></i>Model Performance Comparison</h6>
+        <div id="metricsChart"></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card-custom">
+        <h6 class="fw-700 mb-3"><i class="bi bi-sort-down me-2 text-primary"></i>Ranking by F1 Score</h6>
+        <div id="f1RankingChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-5">
+      <div class="card-custom">
+        <h6 class="fw-700 mb-3"><i class="bi bi-pentagon me-2 text-primary"></i>Radar Chart</h6>
+        <div id="radarChart"></div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card-custom">
+        <h6 class="fw-700 mb-3">
+          <i class="bi bi-grid-3x3 me-2 text-primary"></i>
+          Confusion Matrix — {{ best.model_name if best else "" }}
+        </h6>
+        <div id="cmChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-Model Classification Report -->
+  {% for result in results %}
+  <div class="card-custom mb-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="fw-700 mb-0">
+        <i class="bi bi-file-text me-2 text-primary"></i>
+        {{ result.model_name }} — Classification Report
+        {% if result.model_name == best.model_name %}
+          <span class="badge bg-success ms-2">Best</span>
+        {% endif %}
+      </h6>
+      <div class="d-flex gap-3">
+        <span class="fw-600 text-primary">Acc: {{ "%.4f"|format(result.accuracy) }}</span>
+        <span class="fw-600 text-success">F1: {{ "%.4f"|format(result.f1_score) }}</span>
+      </div>
+    </div>
+    {% if result.classification_report %}
+    <div class="table-responsive">
+      <table class="table table-sm report-table mb-0">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>Support</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cls, vals in result.classification_report.items() %}
+            {% if cls not in ["accuracy"] and vals is mapping %}
+            <tr class="{% if cls in ['macro avg','weighted avg'] %}avg-row{% endif %}">
+              <td class="fw-600">{{ cls }}</td>
+              <td>{{ "%.4f"|format(vals.precision) }}</td>
+              <td>{{ "%.4f"|format(vals.recall) }}</td>
+              <td>{{ "%.4f"|format(vals['f1-score']) }}</td>
+              <td>{{ vals.support|int }}</td>
+            </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.metric-summary-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center}
+.metric-summary-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto .75rem}
+.metric-summary-icon.blue{background:rgba(67,97,238,.15);color:#4361ee}
+.metric-summary-icon.purple{background:rgba(114,9,183,.15);color:#7209b7}
+.metric-summary-icon.pink{background:rgba(247,37,133,.15);color:#f72585}
+.metric-summary-icon.green{background:rgba(25,135,84,.15);color:#198754}
+.metric-summary-value{font-size:1.6rem;font-weight:700;color:var(--text)}
+.metric-summary-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.metric-summary-model{font-size:.78rem;color:var(--primary);font-weight:500;margin-top:.25rem}
+.report-table th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border:none;padding:.6rem .75rem}
+.report-table td{font-size:.85rem;padding:.6rem .75rem;border-color:var(--border)}
+.avg-row td{background:rgba(67,97,238,.06)!important;font-weight:600}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const charts = {{ charts | tojson }};
+Plotly.newPlot("metricsChart", JSON.parse(charts.metrics_chart).data, JSON.parse(charts.metrics_chart).layout, {responsive:true,displayModeBar:false});
+Plotly.newPlot("radarChart", JSON.parse(charts.radar_chart).data, JSON.parse(charts.radar_chart).layout, {responsive:true,displayModeBar:false});
+Plotly.newPlot("f1RankingChart", JSON.parse(charts.f1_ranking_chart).data, JSON.parse(charts.f1_ranking_chart).layout, {responsive:true,displayModeBar:false});
+if (charts.confusion_matrix) {
+  Plotly.newPlot("cmChart", JSON.parse(charts.confusion_matrix).data, JSON.parse(charts.confusion_matrix).layout, {responsive:true,displayModeBar:false});
+}
+</script>
+{% endblock %}

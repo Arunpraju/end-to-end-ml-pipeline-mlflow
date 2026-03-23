@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container-fluid px-4 py-5">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <div class="hero-badge mb-3"><i class="bi bi-stars me-1"></i>End-to-End ML Pipeline</div>
+        <h1 class="hero-title">Train · Track · Deploy<br><span class="text-gradient">Machine Learning Models</span></h1>
+        <p class="hero-subtitle mt-3 mb-4">
+          A production-ready ML pipeline with automated data ingestion, preprocessing,
+          multi-model training, MLflow experiment tracking, and real-time monitoring — all in one dashboard.
+        </p>
+        <div class="d-flex gap-3 flex-wrap">
+          <button class="btn btn-primary btn-lg px-4 fw-600" data-bs-toggle="modal" data-bs-target="#pipelineModal">
+            <i class="bi bi-play-fill me-2"></i>Run Pipeline
+          </button>
+          <a href="/experiments" class="btn btn-outline-secondary btn-lg px-4">
+            <i class="bi bi-flask me-2"></i>View Experiments
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="pipeline-visual">
+          <div class="pipeline-step active" style="--delay:0.1s">
+            <div class="step-icon"><i class="bi bi-cloud-download-fill"></i></div>
+            <div class="step-info">
+              <div class="step-title">Data Ingestion</div>
+              <div class="step-desc">Load &amp; validate dataset</div>
+            </div>
+            <div class="step-badge">Stage 1</div>
+          </div>
+          <div class="pipeline-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="pipeline-step" style="--delay:0.2s">
+            <div class="step-icon"><i class="bi bi-gear-fill"></i></div>
+            <div class="step-info">
+              <div class="step-title">Preprocessing</div>
+              <div class="step-desc">Scale, impute, split</div>
+            </div>
+            <div class="step-badge">Stage 2</div>
+          </div>
+          <div class="pipeline-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="pipeline-step" style="--delay:0.3s">
+            <div class="step-icon"><i class="bi bi-robot"></i></div>
+            <div class="step-info">
+              <div class="step-title">Model Training</div>
+              <div class="step-desc">Train &amp; log with MLflow</div>
+            </div>
+            <div class="step-badge">Stage 3</div>
+          </div>
+          <div class="pipeline-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="pipeline-step" style="--delay:0.4s">
+            <div class="step-icon"><i class="bi bi-bar-chart-fill"></i></div>
+            <div class="step-info">
+              <div class="step-title">Evaluation</div>
+              <div class="step-desc">Compare &amp; visualize</div>
+            </div>
+            <div class="step-badge">Stage 4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Row -->
+<section class="stats-section py-4">
+  <div class="container-fluid px-4">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="bi bi-database-fill"></i></div>
+          <div class="stat-value">178</div>
+          <div class="stat-label">Dataset Samples</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="bi bi-columns-gap"></i></div>
+          <div class="stat-value">13</div>
+          <div class="stat-label">Input Features</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon pink"><i class="bi bi-robot"></i></div>
+          <div class="stat-value">4</div>
+          <div class="stat-label">ML Algorithms</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="bi bi-shield-check-fill"></i></div>
+          <div class="stat-value">3</div>
+          <div class="stat-label">Wine Classes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Models Section -->
+<section class="py-4">
+  <div class="container-fluid px-4">
+    <h5 class="section-title mb-3"><i class="bi bi-robot me-2 text-primary"></i>Available Models</h5>
+    <div class="row g-3">
+      {% set model_icons = ["tree-fill", "diagram-3-fill", "bar-chart-steps", "circle-fill"] %}
+      {% set model_colors = ["blue", "purple", "pink", "green"] %}
+      {% set model_descriptions = [
+        "Ensemble of decision trees with bagging for robust classification.",
+        "Iterative gradient descent optimizer with high accuracy.",
+        "Hyperplane-based classifier with RBF kernel for non-linear data.",
+        "Probabilistic classifier with L2 regularization."
+      ] %}
+      {% for model in models %}
+      <div class="col-md-6 col-xl-3">
+        <div class="model-card">
+          <div class="model-icon {{ model_colors[loop.index0 % 4] }}">
+            <i class="bi bi-{{ model_icons[loop.index0 % 4] }}"></i>
+          </div>
+          <div class="model-name">{{ model }}</div>
+          <div class="model-desc">{{ model_descriptions[loop.index0 % 4] }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline Modal -->
+<div class="modal fade" id="pipelineModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-custom">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-700">
+          <i class="bi bi-sliders me-2 text-primary"></i>Configure Pipeline
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/run_pipeline" method="POST">
+        <div class="modal-body">
+          <p class="text-muted mb-3">Select the models you want to train. All models are trained and tracked via MLflow.</p>
+          <div class="mb-3">
+            <label class="form-label fw-600">Select Models to Train</label>
+            <div class="models-checklist">
+              {% for model in models %}
+              <div class="model-check-item">
+                <input class="form-check-input" type="checkbox" name="models" value="{{ model }}" id="m{{ loop.index }}" checked>
+                <label class="form-check-label" for="m{{ loop.index }}">
+                  <i class="bi bi-check-circle-fill text-primary me-2"></i>{{ model }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="info-box">
+            <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+            Dataset: <strong>Wine Quality (sklearn)</strong> — 178 samples, 13 features, 3 classes.
+            All runs will be tracked in MLflow.
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4 fw-600">
+            <i class="bi bi-play-fill me-1"></i>Launch Pipeline
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
